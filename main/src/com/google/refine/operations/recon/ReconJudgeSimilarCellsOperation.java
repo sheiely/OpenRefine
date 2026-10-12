@@ -61,6 +61,7 @@ import com.google.refine.model.changes.ReconChange;
 import com.google.refine.model.recon.ReconConfig;
 import com.google.refine.operations.EngineDependentMassCellOperation;
 import com.google.refine.operations.OperationDescription;
+import com.google.refine.operations.recon.strategy.ReconJudgmentStrategies;
 
 public class ReconJudgeSimilarCellsOperation extends EngineDependentMassCellOperation {
 
@@ -230,27 +231,7 @@ public class ReconJudgeSimilarCellsOperation extends EngineDependentMassCellOper
                                 recon.matchRank = -1;
                                 recon.judgmentAction = "similar";
 
-                                if (_judgment == Judgment.Matched) {
-                                    recon.judgment = Recon.Judgment.Matched;
-                                    recon.match = _match;
-
-                                    if (recon.candidates != null) {
-                                        for (int m = 0; m < recon.candidates.size(); m++) {
-                                            if (recon.candidates.get(m).id.equals(_match.id)) {
-                                                recon.matchRank = m;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                } else if (_judgment == Judgment.New) {
-                                    recon.judgment = Recon.Judgment.New;
-                                    recon.match = null;
-                                } else if (_judgment == Judgment.None) {
-                                    recon.judgment = recon.error == null ? Recon.Judgment.None : Recon.Judgment.Error;
-                                    recon.match = null;
-                                } else if (_judgment == Judgment.Error) {
-                                    throw new IllegalArgumentException("Cannot manually set judgment to 'error'");
-                                }
+                                ReconJudgmentStrategies.get(_judgment).apply(recon, _match);
 
                                 _dupReconMap.put(cell.recon.id, recon);
                             }

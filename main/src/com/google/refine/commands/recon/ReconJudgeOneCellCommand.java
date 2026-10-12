@@ -52,6 +52,7 @@ import com.google.refine.model.ReconCandidate;
 import com.google.refine.model.ReconStats;
 import com.google.refine.model.changes.CellChange;
 import com.google.refine.model.changes.ReconChange;
+import com.google.refine.operations.recon.strategy.ReconJudgmentStrategies;
 import com.google.refine.process.QuickHistoryEntryProcess;
 import com.google.refine.util.Pool;
 
@@ -185,40 +186,19 @@ public class ReconJudgeOneCellCommand extends Command {
 
             String description = null;
 
-            newCell.recon.matchRank = -1;
             newCell.recon.judgmentAction = "single";
             newCell.recon.judgmentBatchSize = 1;
 
+            ReconJudgmentStrategies.get(judgment)
+                    .apply(newCell.recon, match);
+
             if (judgment == Judgment.None) {
-                if (cell.recon.error == null) {
-                    newCell.recon.judgment = Recon.Judgment.None;
-                } else {
-                    newCell.recon.judgment = Recon.Judgment.Error;
-                }
-                newCell.recon.match = null;
                 description = "Discard recon judgment for " + cellDescription;
 
-            } else if (judgment == Judgment.Error) {
-
-                throw new IllegalArgumentException("Cannot manually set judgment to 'error'");
-
             } else if (judgment == Judgment.New) {
-                newCell.recon.judgment = Recon.Judgment.New;
-                newCell.recon.match = null;
-
                 description = "Mark to create new item for " + cellDescription;
-            } else {
-                newCell.recon.judgment = Recon.Judgment.Matched;
-                newCell.recon.match = this.match;
-                if (newCell.recon.candidates != null) {
-                    for (int m = 0; m < newCell.recon.candidates.size(); m++) {
-                        if (newCell.recon.candidates.get(m).id.equals(this.match.id)) {
-                            newCell.recon.matchRank = m;
-                            break;
-                        }
-                    }
-                }
 
+            } else {
                 description = "Match " + this.match.name +
                         " (" + match.id + ") to " +
                         cellDescription;
