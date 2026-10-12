@@ -35,7 +35,6 @@ package com.google.refine.commands.expr;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -48,20 +47,14 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import com.google.refine.commands.Command;
 import com.google.refine.expr.EvalError;
 import com.google.refine.expr.Evaluable;
 import com.google.refine.expr.ExpressionUtils;
-import com.google.refine.expr.HasFields;
 import com.google.refine.expr.MetaParser;
 import com.google.refine.expr.ParsingException;
-import com.google.refine.expr.WrappedCell;
-import com.google.refine.expr.WrappedRow;
 import com.google.refine.model.Cell;
 import com.google.refine.model.Project;
 import com.google.refine.model.Row;
@@ -217,67 +210,14 @@ public class PreviewExpressionCommand extends Command {
         }
     }
 
-    static protected void writeValue(StringBuffer sb, Object v, boolean quote) {
-        if (ExpressionUtils.isError(v)) {
-            sb.append("[error: " + ((EvalError) v).message + "]");
-        } else {
-            if (v == null) {
-                sb.append("null");
-            } else {
-                if (v instanceof WrappedCell) {
-                    sb.append("[object Cell]");
-                } else if (v instanceof WrappedRow) {
-                    sb.append("[object Row]");
-                } else if (v instanceof ObjectNode) {
-                    sb.append(((ObjectNode) v).toString());
-                } else if (v instanceof ArrayNode) {
-                    sb.append(((ArrayNode) v).toString());
-                } else if (ExpressionUtils.isArray(v)) {
-                    Object[] a = (Object[]) v;
-                    sb.append("[ ");
-                    for (int i = 0; i < a.length; i++) {
-                        if (i > 0) {
-                            sb.append(", ");
-                        }
-                        writeValue(sb, a[i], true);
-                    }
-                    sb.append(" ]");
-                } else if (ExpressionUtils.isArrayOrList(v)) {
-                    List<Object> list = ExpressionUtils.toObjectList(v);
-                    sb.append("[ ");
-                    for (int i = 0; i < list.size(); i++) {
-                        if (i > 0) {
-                            sb.append(", ");
-                        }
-                        writeValue(sb, list.get(i), true);
-                    }
-                    sb.append(" ]");
-                } else if (v instanceof HasFields) {
-                    sb.append("[object " + v.getClass().getSimpleName() + "]");
-                } else if (v instanceof OffsetDateTime) {
-                    sb.append("[date " +
-                            ParsingUtilities.dateToString((OffsetDateTime) v) + "]");
-                } else if (v instanceof String) {
-                    if (quote) {
-                        try {
-                            sb.append(ParsingUtilities.mapper.writeValueAsString(((String) v)));
-                        } catch (JsonProcessingException e) {
-                            // will not happen
-                        }
-                    } else {
-                        sb.append((String) v);
-                    }
-                } else if (v instanceof Double || v instanceof Float) {
-                    Number n = (Number) v;
-                    if (n.doubleValue() - n.longValue() == 0.0) {
-                        sb.append(n.longValue());
-                    } else {
-                        sb.append(n.doubleValue());
-                    }
-                } else {
-                    sb.append(v.toString());
-                }
-            }
-        }
+    private static final PreviewValueFormatter VALUE_FORMATTER =
+        new PreviewValueFormatter();
+
+    static protected void writeValue(
+            StringBuffer sb,
+            Object v,
+            boolean quote
+    ) {
+        VALUE_FORMATTER.writeValue(sb, v, quote);
     }
 }
